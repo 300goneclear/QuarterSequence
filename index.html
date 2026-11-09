@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>QT Cycle + SSMT Tool</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@500;600;700&family=DM+Sans:opsz,wght@9..40,400;9..40,500;9..40,600&family=JetBrains+Mono:wght@400;500&display=swap');
+
+  :root {
+    --bg: #000; --card: #0a0a0a; --border: #1c1c1c; --border2: #2a2a2a;
+    --text: #f0ece4; --muted: #6b6560; --gold: #c4a35a;
+    --q1: #5a6a7a; --q2: #b33a3a; --q3: #2d6a4f; --q4: #1a4a7a;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: 'DM Sans', system-ui, sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; }
+  .page { max-width: 820px; margin: 0 auto; padding: 28px 20px 48px; }
+
+  .topbar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px;
+    font-size: 0.7rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); }
+  .topbar strong { color: var(--text); font-weight: 500; }
+
+  /* LIVE CLOCK — timeline presentation */
+  .live-clock {
+    background: var(--card);
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 18px 18px 16px;
+    margin-bottom: 20px;
+  }
+  .live-clock .clock-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    margin-bottom: 14px;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  .live-clock .clock-label {
+    font-size: 0.62rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+  .live-clock .clock-time {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 1.5rem;
+    font-weight: 500;
+    color: var(--gold);
+    letter-spacing: 0.04em;
+  }
+  .live-clock .clock-date {
+    font-size: 0.75rem;
+    color: var(--muted);
+    margin-bottom: 12px;
+  }
+  .live-clock .clock-session {
+    font-size: 0.62rem;
+    letter-spacing: 0.14em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: center;
+    margin-bottom: 10px;
+  }
+  .live-clock .clock-seq {
+    margin-top: 12px;
+    text-align: center;
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.82rem;
+    color: var(--text);
+    letter-spacing: 0.04em;
+    word-break: break-all;
+  }
+
+  .cycle-bars { display: flex; flex-direction: column; gap: 8px; margin-top: 4px; }
+  .cycle-bar-row { display: grid; grid-template-columns: 88px 1fr; gap: 10px; align-items: center; }
+  .cycle-bar-name {
+    font-size: 0.65rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    text-align: right;
+  }
+  .cycle-bar-track {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 2px;
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .cycle-bar-track .seg {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: rgba(255,255,255,0.85);
+    height: 100%;
+  }
+  .cycle-bar-track .seg.q1 { background: var(--q1); }
+  .cycle-bar-track .seg.q2 { background: var(--q2); }
+  .cycle-bar-track .seg.q3 { background: var(--q3); }
+  .cycle-bar-track .seg.q4 { background: var(--q4); }
+  .cycle-bar-track .seg.active {
+    box-shadow: inset 0 0 0 2px var(--gold);
+    color: #fff;
+  }
+  /* Size scale: higher cycles = taller bars */
+  .cycle-bar-track.size-xl { height: 40px; border-radius: 8px; }
+  .cycle-bar-track.size-xl .seg { font-size: 0.8rem; }
+  .cycle-bar-track.size-lg { height: 34px; border-radius: 7px; }
+  .cycle-bar-track.size-lg .seg { font-size: 0.72rem; }
+  .cycle-bar-track.size-md { height: 28px; }
+  .cycle-bar-track.size-md .seg { font-size: 0.68rem; }
+  .cycle-bar-track.size-sm { height: 22px; }
+  .cycle-bar-track.size-sm .seg { font-size: 0.62rem; }
+  .cycle-bar-track.size-xs { height: 16px; }
+  .cycle-bar-track.size-xs .seg { font-size: 0.55rem; }
+  .cycle-bar-track.size-micro { height: 10px; }
+  .cycle-bar-track.size-micro .seg { font-size: 0; }
+
+  .live-clock .clock-seq span {
+    color: var(--muted);
+    font-size: 0.6rem;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    display: block;
+    margin-bottom: 4px;
+    font-family: 'DM Sans', sans-serif;
+  }
+
+  .controls { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 20px; }
+  .tap-row { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+  .tap-group label { display: block; font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  .tap-select { display: flex; flex-wrap: wrap; gap: 3px; max-height: 140px; overflow-y: auto; padding: 4px; background: var(--bg); border: 1px solid var(--border2); border-radius: 8px; }
+  #yearSelect { max-height: 180px; }
+  .tap-btn { padding: 6px 8px; border: 1px solid transparent; border-radius: 6px; background: transparent; color: var(--muted); font-family: inherit; font-size: 0.78rem; cursor: pointer; min-width: 40px; }
+  .tap-btn:hover { color: var(--text); border-color: var(--border2); }
+  .tap-btn.active { background: var(--gold); color: #000; font-weight: 600; }
+  .time-row { display: grid; grid-template-columns: 1fr auto; gap: 12px; align-items: end; }
+  input[type="time"] { width: 100%; padding: 11px 12px; background: var(--bg); border: 1px solid var(--border2); border-radius: 8px; color: var(--text); font-size: 0.95rem; }
+  input[type="time"]:focus { outline: none; border-color: var(--gold); }
+  .btn-go { padding: 11px 22px; background: var(--gold); color: #000; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; white-space: nowrap; }
+  .btn-now { display: block; width: 100%; margin-top: 10px; padding: 9px; background: transparent; border: 1px solid var(--border); border-radius: 8px; color: var(--muted); font-size: 0.78rem; cursor: pointer; letter-spacing: 0.06em; text-transform: uppercase; }
+  .btn-now:hover { border-color: var(--gold); color: var(--gold); }
+
+  .hero { margin-bottom: 22px; }
+  .hero-date { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 3.2rem; font-weight: 500; line-height: 1; }
+  .hero-date .th { font-size: 1.2rem; vertical-align: super; color: var(--gold); }
+  .hero-session { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 1.8rem; color: var(--gold); margin-top: 4px; }
+  .hero-meta { margin-top: 8px; font-size: 0.75rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+
+  .q-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 22px; }
+  .q-card { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 16px 18px; }
+  .q-card.active { border-color: var(--gold); }
+  .q-card .q-label { font-size: 0.65rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 6px; }
+  .q-card .q-value { font-family: 'Cormorant Garamond', Georgia, serif; font-size: 1.85rem; font-weight: 600; }
+  .q-card .q-value.gold { color: var(--gold); }
+  .q-card .q-sub { font-size: 0.72rem; color: var(--muted); margin-top: 4px; }
+
+  .timeline-section { margin-bottom: 22px; }
+  .timeline-header { font-size: 0.65rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 12px; text-align: center; }
+  .timeline { display: grid; grid-template-columns: repeat(4, 1fr); gap: 3px; border-radius: 8px; overflow: hidden; }
+  .tl-block { padding: 14px 10px; text-align: center; }
+  .tl-block.q1 { background: var(--q1); } .tl-block.q2 { background: var(--q2); }
+  .tl-block.q3 { background: var(--q3); } .tl-block.q4 { background: var(--q4); }
+  .tl-block.active { box-shadow: inset 0 0 0 2px var(--gold); }
+  .tl-q { font-size: 0.8rem; font-weight: 700; color: #fff; }
+  .tl-time { font-size: 0.7rem; color: rgba(255,255,255,0.7); margin-top: 2px; font-family: 'JetBrains Mono', monospace; }
+  .micro-strip { display: grid; grid-template-columns: repeat(16, 1fr); gap: 2px; margin-top: 6px; }
+  .micro-cell { height: 8px; border-radius: 2px; opacity: 0.7; }
+  .micro-cell.q1 { background: var(--q1); } .micro-cell.q2 { background: var(--q2); }
+  .micro-cell.q3 { background: var(--q3); } .micro-cell.q4 { background: var(--q4); }
+  .micro-cell.active { opacity: 1; box-shadow: 0 0 0 1px var(--gold); }
+
+  .stack-section, .ssmt-section { background: var(--card); border: 1px solid var(--border); border-radius: 12px; padding: 18px; margin-bottom: 14px; }
+  .stack-title { font-size: 0.65rem; letter-spacing: 0.14em; text-transform: uppercase; color: var(--muted); margin-bottom: 14px; }
+  .ssmt-section .stack-title { color: var(--gold); }
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; font-size: 0.62rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); padding: 0 8px 10px; border-bottom: 1px solid var(--border); }
+  td { padding: 10px 8px; font-size: 0.88rem; border-bottom: 1px solid var(--border); }
+  tr:last-child td { border-bottom: none; }
+  .q-badge { display: inline-block; padding: 2px 10px; border-radius: 4px; font-size: 0.78rem; font-weight: 700; color: #fff; }
+  .q-badge.q1 { background: var(--q1); } .q-badge.q2 { background: var(--q2); }
+  .q-badge.q3 { background: var(--q3); } .q-badge.q4 { background: var(--q4); }
+  .q-badge.q0 { background: #333; color: #888; }
+  .mono { font-family: 'JetBrains Mono', monospace; font-size: 0.75rem; color: var(--muted); }
+  .compact { margin-top: 14px; text-align: center; padding: 12px; background: var(--bg); border-radius: 8px; border: 1px solid var(--border); }
+  .compact .clabel { font-size: 0.6rem; letter-spacing: 0.12em; text-transform: uppercase; color: var(--muted); margin-bottom: 4px; }
+  .compact .ccode { font-family: 'JetBrains Mono', monospace; font-size: 0.95rem; color: var(--gold); letter-spacing: 0.06em; }
+
+  .ssmt-row { display: flex; justify-content: space-between; align-items: center; padding: 9px 0; border-bottom: 1px solid var(--border); font-size: 0.85rem; }
+  .ssmt-row:last-child { border-bottom: none; }
+  .tag { font-size: 0.7rem; font-weight: 600; padding: 3px 10px; border-radius: 999px; }
+  .tag-yes { background: rgba(45,106,79,0.3); color: #5dcaa5; }
+  .tag-no { background: rgba(179,58,58,0.25); color: #e07070; }
+  .tag-info { background: rgba(196,163,90,0.15); color: var(--gold); }
+  .hint { font-size: 0.72rem; color: var(--muted); margin: 2px 0 6px; }
+  .ltf-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
+  .ltf-chip { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; padding: 4px 10px; background: var(--bg); border: 1px solid var(--border2); border-radius: 5px; }
+
+  .hidden { display: none !important; }
+  footer { text-align: center; margin-top: 28px; font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
+  footer .gold { color: var(--gold); }
+  @media (max-width: 560px) {
+    .hero-date { font-size: 2.4rem; }
+    .live-clock .clock-time { font-size: 1.8rem; }
+    .tap-row { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+<div class="page">
+  <div class="topbar">
+    <div><strong>QS Kingdom</strong> · Quarterly Theory</div>
+    <div>New York · Eastern</div>
+  </div>
+
+  <!-- LIVE CLOCK -->
+  <div class="live-clock" id="liveClock">
+    <div class="clock-top">
+      <div class="clock-label">Live New York Time</div>
+      <div class="clock-time" id="clockTime">--:--:--</div>
+    </div>
+    <div class="clock-date" id="clockDate">Loading NY time…</div>
+    <div class="clock-session" id="clockSession">Live cycle bars · NY</div>
+    <div class="cycle-bars" id="clockBars"></div>
+    <div class="clock-seq"><span>Live sequence</span><div id="clockSeq">—</div></div>
+  </div>
+
+  <div class="controls">
+    <div class="tap-row">
+      <div class="tap-group"><label>Year</label><div class="tap-select" id="yearSelect"></div></div>
+      <div class="tap-group"><label>Month</label><div class="tap-select" id="monthSelect"></div></div>
+      <div class="tap-group"><label>Day</label><div class="tap-select" id="daySelect"></div></div>
+    </div>
+    <div class="time-row">
+      <div class="tap-group">
+        <label>Time (NY)</label>
+        <input type="time" id="timeInput" step="60" value="09:30">
+      </div>
+      <button class="btn-go" type="button" onclick="calculate()">Map the Quarter</button>
+    </div>
+    <button class="btn-now" type="button" onclick="useNow()">Use Current NY Time</button>
+  </div>
+
+  <div id="output" class="hidden">
+    <div class="hero">
+      <div class="hero-date" id="heroDate">—</div>
+      <div class="hero-session" id="heroSession">—</div>
+      <div class="hero-meta" id="heroMeta">—</div>
+    </div>
+    <div class="q-grid" id="qGrid"></div>
+    <div class="timeline-section">
+      <div class="timeline-header" id="tlHeader">90M Quarters</div>
+      <div class="timeline" id="timeline"></div>
+      <div class="micro-strip" id="microStrip"></div>
+    </div>
+    <div class="stack-section">
+      <div class="stack-title">Full Cycle Stack</div>
+      <table>
+        <thead><tr><th>Cycle</th><th>Quarter</th><th>Window</th></tr></thead>
+        <tbody id="tableBody"></tbody>
+      </table>
+      <div class="compact"><div class="clabel">Compact Code</div><div class="ccode" id="compactCode"></div></div>
+    </div>
+    <div class="ssmt-section">
+      <div class="stack-title">SSMT Validity · HTF → LTF</div>
+      <div id="ssmtZones"></div>
+      <div style="margin-top:14px" id="htfContext"></div>
+      <div style="margin-top:10px" id="ltfAllowed"></div>
+    </div>
+  </div>
+
+  <footer>QS Arcana · Quarterly Theory<br><span class="gold">Map the quarter.</span></footer>
+</div>
+
+<script>
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const DAYS = ["Sunday","Monday","Tuesday","Wednesday","Thursday","Friday","Saturday"];
+const YEAR_RANGE = {1:"Jan – Mar",2:"Apr – Jun",3:"Jul – Sep",4:"Oct – Dec"};
+// QT week day names: Q1=Monday window, Q2=Tuesday, Q3=Wednesday, Q4=Thursday
+const WEEK_DAY = {1:"Monday",2:"Tuesday",3:"Wednesday",4:"Thursday",0:"—"};
+const YEAR_OPTIONS = Array.from({length: 2028 - 1971 + 1}, (_, i) => 1971 + i);
+const MONTH_OPTIONS = [
+  {v:1,l:"Jan"},{v:2,l:"Feb"},{v:3,l:"Mar"},{v:4,l:"Apr"},
+  {v:5,l:"May"},{v:6,l:"Jun"},{v:7,l:"Jul"},{v:8,l:"Aug"},
+  {v:9,l:"Sep"},{v:10,l:"Oct"},{v:11,l:"Nov"},{v:12,l:"Dec"}
+];
+const HTF_LTF_MAP = {1:[1,2,3], 2:[1,2], 3:[3,4], 4:[1,3,4]};
+
+let selectedYear = 2026, selectedMonth = 11, selectedDay = 16;
+
+function getQuadrennial(y) { return ((((y - 2023) % 4) + 4) % 4) + 1; }
+function getYearly(m) { if (m<=3) return 1; if (m<=6) return 2; if (m<=9) return 3; return 4; }
+function getQuarterly(m) {
+  if ([1,4,7,10].includes(m)) return 1;
+  if ([2,5,8,11].includes(m)) return 2;
+  return 3;
+}
+
+// Week starts Sunday 18:00 NY
+// Q1 = Sun 18:00→Mon 18:00 → labeled Monday
+// Q2 = Mon 18:00→Tue 18:00 → labeled Tuesday
+// Q3 = Tue 18:00→Wed 18:00 → labeled Wednesday
+// Q4 = Wed 18:00→Thu 18:00 → labeled Thursday
+function getWeekly(dt) {
+  const d = new Date(dt);
+  let weekStart = new Date(d);
+  weekStart.setDate(d.getDate() - d.getDay());
+  weekStart.setHours(18, 0, 0, 0);
+  if (d < weekStart) weekStart.setDate(weekStart.getDate() - 7);
+  const hours = (d - weekStart) / 3600000;
+  if (hours >= 0 && hours < 24) return 1;
+  if (hours >= 24 && hours < 48) return 2;
+  if (hours >= 48 && hours < 72) return 3;
+  if (hours >= 72 && hours < 96) return 4;
+  return 0;
+}
+
+function getMonthly(dt) {
+  const d = new Date(dt);
+  let weekStart = new Date(d);
+  weekStart.setDate(d.getDate() - d.getDay());
+  weekStart.setHours(18, 0, 0, 0);
+  if (d < weekStart) weekStart.setDate(weekStart.getDate() - 7);
+  const wsYear = weekStart.getFullYear(), wsMonth = weekStart.getMonth();
+  let firstSun = new Date(wsYear, wsMonth, 1);
+  const firstDay = firstSun.getDay();
+  if (firstDay !== 0) firstSun.setDate(firstSun.getDate() + (7 - firstDay));
+  firstSun.setHours(18, 0, 0, 0);
+  if (firstSun.getMonth() !== wsMonth) {
+    firstSun = new Date(wsYear, wsMonth, 1);
+    firstSun.setDate(1 - firstDay);
+    firstSun.setHours(18, 0, 0, 0);
+  }
+  const weekNum = Math.floor(Math.round((weekStart - firstSun) / 86400000) / 7) + 1;
+  if (weekNum <= 0) return { q: 4, label: "Q4*" };
+  if (weekNum >= 5) return { q: 4, label: "Q4*" };
+  return { q: weekNum, label: "Q" + weekNum };
+}
+
+function getDaily(dt) {
+  const h = dt.getHours() + dt.getMinutes()/60 + dt.getSeconds()/3600;
+  if (h >= 18) return 1;
+  if (h < 6) return 2;
+  if (h < 12) return 3;
+  return 4;
+}
+function sessionName(q) { return {1:"ASIA",2:"LONDON",3:"NY AM",4:"NY PM"}[q] || "—"; }
+function sessionRange(q) { return {1:"18:00 – 00:00",2:"00:00 – 06:00",3:"06:00 – 12:00",4:"12:00 – 18:00"}[q] || ""; }
+
+function getFractals(dt, dailyQ) {
+  let blockStart = new Date(dt);
+  if (dailyQ === 1) {
+    if (dt.getHours() >= 18) blockStart.setHours(18,0,0,0);
+    else { blockStart.setDate(blockStart.getDate()-1); blockStart.setHours(18,0,0,0); }
+  } else if (dailyQ === 2) blockStart.setHours(0,0,0,0);
+  else if (dailyQ === 3) blockStart.setHours(6,0,0,0);
+  else blockStart.setHours(12,0,0,0);
+
+  const levels = [
+    { name: "90-minute", hours: 1.5 },
+    { name: "22.5-minute", hours: 0.375 },
+    { name: "5.625-minute", hours: 0.09375 },
+    { name: "1.406-minute", hours: 0.0234375 },
+    { name: "21.1-second", hours: 0.005859375 },
+    { name: "5.27-second", hours: 0.00146484375 },
+  ];
+  const results = [];
+  let currentStart = blockStart, currentDur = 6.0;
+  for (const lvl of levels) {
+    const qDur = currentDur / 4;
+    let q = Math.floor(((dt - currentStart) / 60000) / (qDur * 60)) + 1;
+    q = Math.min(Math.max(q, 1), 4);
+    const qStart = new Date(currentStart.getTime() + (q-1)*qDur*3600000);
+    const qEnd = new Date(qStart.getTime() + qDur*3600000);
+    const fmt = (t) => `${String(t.getHours()).padStart(2,"0")}:${String(t.getMinutes()).padStart(2,"0")}${qDur < 1/60 ? ":"+String(t.getSeconds()).padStart(2,"0") : ""}`;
+    results.push({ name: lvl.name, q, window: `${fmt(qStart)} – ${fmt(qEnd)}` });
+    currentStart = qStart; currentDur = qDur;
+  }
+  return results;
+}
+
+function plusOne(n) { return n === 4 ? 1 : n + 1; }
+function setupsFromAlignedAbove(digit) {
+  const s = new Set();
+  if (!digit || digit < 1 || digit > 4) return s;
+  s.add(plusOne(digit));
+  if (digit === 4) s.add(2);
+  return s;
+}
+function judgeSSMT(above2, above1, thisQ) {
+  if (!thisQ || thisQ < 1) return { tag: "tag-no", text: "No quarter", hint: "Outside" };
+  if (above2 && above1 && above2 === above1) {
+    const setups = setupsFromAlignedAbove(above1);
+    if (setups.has(thisQ)) {
+      const path = above1 === 4
+        ? `Q4·Q4·Q1·Q2 path — Q${thisQ} is valid SSMT`
+        : `From ${above1}·${above1}·${above1} → partner Q${plusOne(above1)} — Q${thisQ} valid`;
+      return { tag: "tag-yes", text: "Valid SSMT", hint: path };
+    }
+    if (thisQ === above1) return { tag: "tag-info", text: "Aligned (sequence)", hint: `Aligned Q${thisQ} with ${above1}·${above1} above` };
+    return { tag: "tag-no", text: "Not valid vs above", hint: `Above ${above2}·${above1} expects Q${[...setups].join(" or Q")}, got Q${thisQ}` };
+  }
+  if (above1) {
+    if (above1 === 4 && thisQ === 1) return { tag: "tag-yes", text: "Valid SSMT (preferred)", hint: "Preferred SSMT: Q4→Q1" };
+    if (above1 === 1 && thisQ === 2) return { tag: "tag-yes", text: "Valid SSMT (preferred)", hint: "Preferred SSMT: Q1→Q2" };
+    if (above1 === 2 && thisQ === 3) return { tag: "tag-yes", text: "Valid SSMT", hint: "Consecutive SSMT: Q2→Q3" };
+    if (above1 === 3 && thisQ === 4) return { tag: "tag-yes", text: "Valid SSMT", hint: "Consecutive SSMT: Q3→Q4" };
+    if (above1 === thisQ) return { tag: "tag-info", text: "Aligned (sequence)", hint: `Aligned with above (Q${above1}·Q${thisQ})` };
+    return { tag: "tag-no", text: "Not valid vs above", hint: `Not sequential vs above (Q${above1}→Q${thisQ})` };
+  }
+  return { tag: "tag-info", text: "Top of stack", hint: "No cycle above" };
+}
+
+function analyseNeighbour(a, b, c) {
+  if (!a || !b || a < 1 || a > 4 || b < 1 || b > 4) return null;
+  if (a === b && (!c || c === a)) {
+    const setup = plusOne(a);
+    return { kind: "aligned", current: `${a}·${a}·${a}`, neighbour: `${a}·${setup}·${a}`, setupQ: setup,
+      message: `SSMT sits between ${a}·${a}·${a} and ${a}·${setup}·${a} — valid setup on Q${setup}` };
+  }
+  if (b === plusOne(a)) {
+    return { kind: "partner", current: `${a}·${b}·${c||b}`, neighbour: `${a}·${a}·${a}`, setupQ: b,
+      message: `Neighbouring sequence is ${a}·${a}·${a} — Q${b} is the valid SSMT setup` };
+  }
+  return null;
+}
+
+function qClass(label) {
+  const s = String(label);
+  if (s.includes("Q1") || label === 1) return "q1";
+  if (s.includes("Q2") || label === 2) return "q2";
+  if (s.includes("Q3") || label === 3) return "q3";
+  if (s.includes("Q4") || label === 4) return "q4";
+  return "q0";
+}
+function ordinal(n) { const s = ["th","st","nd","rd"], v = n % 100; return s[(v-20)%10] || s[v] || s[0]; }
+function pad(n) { return String(n).padStart(2, "0"); }
+function daysInMonth(y, m) { return new Date(y, m, 0).getDate(); }
+
+function getNYParts(date = new Date()) {
+  const fmt = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/New_York",
+    year: "numeric", month: "2-digit", day: "2-digit",
+    hour: "2-digit", minute: "2-digit", second: "2-digit",
+    hour12: false, weekday: "long"
+  });
+  const parts = {};
+  for (const p of fmt.formatToParts(date)) if (p.type !== "literal") parts[p.type] = p.value;
+  let hour = parseInt(parts.hour, 10);
+  if (hour === 24) hour = 0;
+  return {
+    year: +parts.year, month: +parts.month, day: +parts.day,
+    hour, minute: +parts.minute, second: +parts.second, weekday: parts.weekday,
+    asDate: new Date(+parts.year, +parts.month - 1, +parts.day, hour, +parts.minute, +parts.second)
+  };
+}
+
+function fullStack(dt) {
+  const y = dt.getFullYear(), m = dt.getMonth() + 1;
+  const monthly = getMonthly(dt);
+  const weekly = getWeekly(dt);
+  const daily = getDaily(dt);
+  const fractals = getFractals(dt, daily);
+  return {
+    y, m, monthly, weekly, daily, fractals,
+    quad: getQuadrennial(y), yearly: getYearly(m), quarterly: getQuarterly(m),
+    active90: fractals[0] ? fractals[0].q : 0,
+    code: [getQuadrennial(y), getYearly(m), getQuarterly(m), monthly.q, weekly||"x", daily, ...fractals.map(f=>f.q)].join("·")
+  };
+}
+
+function tickClock() {
+  try {
+    const ny = getNYParts();
+    const s = fullStack(ny.asDate);
+    const sess = sessionName(s.daily);
+    document.getElementById("clockTime").textContent = `${pad(ny.hour)}:${pad(ny.minute)}:${pad(ny.second)}`;
+    document.getElementById("clockDate").textContent =
+      `${ny.weekday}, ${MONTHS[ny.month-1]} ${ny.day}, ${ny.year} · ${sessionRange(s.daily)} NY`;
+    document.getElementById("clockSession").textContent =
+      `${sess} · Weekly ${WEEK_DAY[s.weekly]||"Outside"} · ${sessionRange(s.daily)} NY`;
+
+    function barRow(name, activeQ, size) {
+      if (!activeQ || activeQ < 1) activeQ = 0;
+      const hideLabel = size === "size-micro";
+      const segs = [1,2,3,4].map(q =>
+        `<div class="seg q${q}${q===activeQ?" active":""}">${hideLabel?"":"Q"+q}</div>`
+      ).join("");
+      return `<div class="cycle-bar-row">
+        <div class="cycle-bar-name">${name}</div>
+        <div class="cycle-bar-track ${size}">${segs}</div>
+      </div>`;
+    }
+
+    const a225 = s.fractals[1] ? s.fractals[1].q : 0;
+    const a5625 = s.fractals[2] ? s.fractals[2].q : 0;
+
+    document.getElementById("clockBars").innerHTML = [
+      barRow("Quadrennial", s.quad, "size-xl"),
+      barRow("Yearly", s.yearly, "size-lg"),
+      barRow("Quarterly", s.quarterly, "size-lg"),
+      barRow("Monthly", s.monthly.q, "size-md"),
+      barRow("Weekly", s.weekly, "size-md"),
+      barRow("Daily", s.daily, "size-sm"),
+      barRow("90-minute", s.active90, "size-sm"),
+      barRow("22.5m", a225, "size-xs"),
+      barRow("5.625m", a5625, "size-micro"),
+    ].join("");
+
+    document.getElementById("clockSeq").textContent = s.code;
+  } catch (e) {
+    document.getElementById("clockDate").textContent = "Clock error: " + e.message;
+  }
+}
+
+function renderYearSelect() {
+  const el = document.getElementById("yearSelect");
+  el.innerHTML = YEAR_OPTIONS.map(y =>
+    `<button type="button" class="tap-btn${y===selectedYear?" active":""}" onclick="setYear(${y})">${y}</button>`).join("");
+  const a = el.querySelector(".active"); if (a) a.scrollIntoView({ block: "center" });
+}
+function renderMonthSelect() {
+  document.getElementById("monthSelect").innerHTML = MONTH_OPTIONS.map(m =>
+    `<button type="button" class="tap-btn${m.v===selectedMonth?" active":""}" onclick="setMonth(${m.v})">${m.l}</button>`).join("");
+}
+function renderDaySelect() {
+  const max = daysInMonth(selectedYear, selectedMonth);
+  if (selectedDay > max) selectedDay = max;
+  const el = document.getElementById("daySelect");
+  let h = "";
+  for (let d = 1; d <= max; d++) h += `<button type="button" class="tap-btn${d===selectedDay?" active":""}" onclick="setDay(${d})">${d}</button>`;
+  el.innerHTML = h;
+}
+function setYear(y) { selectedYear = y; renderYearSelect(); renderDaySelect(); }
+function setMonth(m) { selectedMonth = m; renderMonthSelect(); renderDaySelect(); }
+function setDay(d) { selectedDay = d; renderDaySelect(); }
+
+function useNow() {
+  const ny = getNYParts();
+  selectedYear = ny.year; selectedMonth = ny.month; selectedDay = ny.day;
+  document.getElementById("timeInput").value = `${pad(ny.hour)}:${pad(ny.minute)}`;
+  renderYearSelect(); renderMonthSelect(); renderDaySelect();
+  calculate();
+}
+
+function calculate() {
+  const timeVal = document.getElementById("timeInput").value || "00:00";
+  const tp = timeVal.split(":");
+  const dt = new Date(selectedYear, selectedMonth - 1, selectedDay, +(tp[0])||0, +(tp[1])||0, +(tp[2])||0);
+  const s = fullStack(dt);
+  const sess = sessionName(s.daily);
+
+  document.getElementById("heroDate").innerHTML = `${MONTHS[selectedMonth-1]} ${selectedDay}<span class="th">${ordinal(selectedDay)}</span>`;
+  document.getElementById("heroSession").textContent = sess;
+  document.getElementById("heroMeta").textContent = `${DAYS[dt.getDay()]} · ${sessionRange(s.daily)} NY · Weekly Q${s.weekly||"—"} = ${WEEK_DAY[s.weekly]||"Outside"}`;
+
+  document.getElementById("qGrid").innerHTML = `
+    <div class="q-card"><div class="q-label">Year</div><div class="q-value">Q${s.yearly}</div><div class="q-sub">${YEAR_RANGE[s.yearly]}</div></div>
+    <div class="q-card"><div class="q-label">Month</div><div class="q-value">Q${s.monthly.q}</div><div class="q-sub">Week ${s.monthly.q} of ${MONTHS[selectedMonth-1]}</div></div>
+    <div class="q-card"><div class="q-label">Week</div><div class="q-value">Q${s.weekly||"—"}</div><div class="q-sub">${WEEK_DAY[s.weekly]||"Outside"}</div></div>
+    <div class="q-card active"><div class="q-label">Day</div><div class="q-value gold">Q${s.daily}</div><div class="q-sub">${sess} session</div></div>`;
+
+  const ninetyStarts = {1:["18:00","19:30","21:00","22:30"],2:["00:00","01:30","03:00","04:30"],3:["06:00","07:30","09:00","10:30"],4:["12:00","13:30","15:00","16:30"]};
+  document.getElementById("tlHeader").textContent = `${sess} · EST · 90M Quarters · Micro Below`;
+  document.getElementById("timeline").innerHTML = [1,2,3,4].map(q =>
+    `<div class="tl-block q${q}${q===s.active90?" active":""}"><div class="tl-q">Q${q}</div><div class="tl-time">${ninetyStarts[s.daily][q-1]}</div></div>`).join("");
+  const a225 = s.fractals[1] ? s.fractals[1].q : 0;
+  let micro = "";
+  for (let q = 1; q <= 4; q++) for (let i = 0; i < 4; i++)
+    micro += `<div class="micro-cell q${q}${(q===s.active90 && i+1===a225)?" active":""}"></div>`;
+  document.getElementById("microStrip").innerHTML = micro;
+
+  const rows = [
+    { cycle: "Quadrennial", label: "Q"+s.quad, window: "" },
+    { cycle: "Yearly", label: "Q"+s.yearly, window: YEAR_RANGE[s.yearly] },
+    { cycle: "Quarterly", label: "Q"+s.quarterly, window: "" },
+    { cycle: "Monthly", label: s.monthly.label, window: "" },
+    { cycle: "Weekly", label: s.weekly?"Q"+s.weekly:"—", window: WEEK_DAY[s.weekly]||"Outside" },
+    { cycle: "Daily", label: "Q"+s.daily, window: sess },
+  ];
+  s.fractals.forEach(f => rows.push({ cycle: f.name, label: "Q"+f.q, window: f.window }));
+  document.getElementById("tableBody").innerHTML = rows.map(r =>
+    `<tr><td>${r.cycle}</td><td><span class="q-badge ${qClass(r.label)}">${r.label}</span></td><td class="mono">${r.window}</td></tr>`).join("");
+  document.getElementById("compactCode").textContent = s.code;
+
+  const zoneChain = [
+    { name: "Quadrennial", q: s.quad }, { name: "Yearly", q: s.yearly },
+    { name: "Quarterly", q: s.quarterly }, { name: "Monthly", q: s.monthly.q },
+    { name: "Weekly", q: s.weekly }, { name: "Daily", q: s.daily },
+    { name: "90-minute", q: s.active90 },
+  ];
+  document.getElementById("ssmtZones").innerHTML = zoneChain.map((z, i) => {
+    const above1 = i > 0 ? zoneChain[i-1].q : null;
+    const above2 = i > 1 ? zoneChain[i-2].q : null;
+    const j = judgeSSMT(above2, above1, z.q);
+    const vs = above2 && above1 ? `vs ${above2}·${above1} above` : (above1 ? `vs Q${above1} above` : "");
+    return `<div class="ssmt-row"><span>${z.name} <span class="q-badge ${qClass(z.q)}" style="margin-left:6px">Q${z.q||"—"}</span>
+      <span style="color:var(--muted);font-size:0.75rem;margin-left:6px">${vs}</span></span>
+      <span class="tag ${j.tag}">${j.text}</span></div><div class="hint">${j.hint}</div>`;
+  }).join("");
+
+  // Highest sequence in full stack
+  let best = null;
+  for (let i = 0; i < zoneChain.length; i++) {
+    const dig = zoneChain[i].q;
+    if (!dig || dig < 1) continue;
+    let j = i;
+    while (j+1 < zoneChain.length && zoneChain[j+1].q === dig) j++;
+    if (j - i + 1 >= 3) {
+      best = { digit: dig, len: j-i+1, label: Array(j-i+1).fill(dig).join("·"), levels: zoneChain.slice(i,j+1).map(c=>c.name).join(" – ") };
+      break;
+    }
+    i = j;
+  }
+  const stackStr = zoneChain.map(c => c.q || "x").join("·");
+  let htf = best
+    ? `<div class="ssmt-row"><span>Full stack</span><span class="tag tag-info">${stackStr}</span></div>
+       <div class="ssmt-row"><span>Highest sequence formed</span><span class="tag tag-yes">${best.label}</span></div>
+       <div class="ssmt-row"><span>Where</span><span class="tag tag-info">${best.levels}</span></div>`
+    : `<div class="ssmt-row"><span>Full stack</span><span class="tag tag-info">${stackStr}</span></div>
+       <div class="ssmt-row"><span>Highest sequence formed</span><span class="tag tag-no">None (no 3-consecutive)</span></div>`;
+
+  const neigh = analyseNeighbour(s.monthly.q, s.weekly||0, s.daily) || (best ? analyseNeighbour(best.digit, best.digit, best.digit) : null);
+  if (neigh) {
+    htf += `<div class="ssmt-row"><span>Current</span><span class="tag tag-info">${neigh.current}</span></div>
+      <div class="ssmt-row"><span>${neigh.kind==="partner"?"Neighbour (aligned)":"SSMT partner"}</span><span class="tag tag-yes">${neigh.neighbour}</span></div>
+      <div class="ssmt-row"><span>Valid setup quarter</span><span class="q-badge ${qClass(neigh.setupQ)}">Q${neigh.setupQ}</span></div>
+      <div class="hint">${neigh.message}</div>`;
+  }
+  document.getElementById("htfContext").innerHTML = htf;
+
+  const htfDigit = best ? best.digit : s.monthly.q;
+  const allowed = HTF_LTF_MAP[htfDigit] || [];
+  document.getElementById("ltfAllowed").innerHTML = allowed.length
+    ? `<div class="hint" style="margin-bottom:6px">Allowed LTF sequences (one cycle lower)</div>
+       <div class="ltf-list">${allowed.map(q=>`<span class="ltf-chip">${q}·${q}·${q}</span>`).join("")}</div>`
+    : `<span class="tag tag-no">No mapping</span>`;
+
+  document.getElementById("output").classList.remove("hidden");
+}
+
+renderYearSelect(); renderMonthSelect(); renderDaySelect();
+tickClock();
+setInterval(tickClock, 1000);
+</script>
+</body>
+</html>
