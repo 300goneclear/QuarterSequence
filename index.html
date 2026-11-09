@@ -147,13 +147,14 @@
     .radial-card svg { max-width: 220px; }
   }
   .live-clock .clock-seq {
-    margin-top: 12px;
+    margin-top: 14px;
     text-align: center;
-    font-family: 'JetBrains Mono', monospace;
-    font-size: 0.82rem;
-    color: var(--text);
-    letter-spacing: 0.04em;
-    word-break: break-all;
+  }
+  .live-clock .clock-seq > span {
+    margin-bottom: 10px;
+  }
+  .live-clock #clockSeqChips {
+    margin-top: 8px;
   }
   .live-clock .clock-seq span {
     color: var(--muted);
@@ -235,6 +236,70 @@
   .ltf-list { display: flex; flex-wrap: wrap; gap: 6px; margin-top: 6px; }
   .ltf-chip { font-family: 'JetBrains Mono', monospace; font-size: 0.78rem; padding: 4px 10px; background: var(--bg); border: 1px solid var(--border2); border-radius: 5px; }
 
+  .compat-line {
+    display: flex; flex-wrap: wrap; gap: 6px; justify-content: center;
+    margin: 10px 0 14px; align-items: center;
+  }
+  .seq-chip {
+    font-family: 'JetBrains Mono', monospace;
+    font-size: 0.95rem;
+    padding: 8px 12px;
+    border-radius: 8px;
+    border: 1px solid var(--border2);
+    background: var(--bg);
+    color: var(--muted);
+    transition: transform 0.15s, box-shadow 0.2s, border-color 0.2s, background 0.2s;
+  }
+  .seq-chip .lbl {
+    display: block;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.6rem;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 2px;
+  }
+  /* Paired chain — light up by quarter colour */
+  .seq-chip.on.q1 {
+    border-color: #8b9bab;
+    color: #d0d8e0;
+    background: rgba(90,106,122,0.45);
+    box-shadow: 0 0 16px rgba(90,106,122,0.55), inset 0 0 0 1px rgba(255,255,255,0.08);
+  }
+  .seq-chip.on.q2 {
+    border-color: #ff6b6b;
+    color: #ffe0e0;
+    background: rgba(224,69,69,0.4);
+    box-shadow: 0 0 16px rgba(224,69,69,0.5), inset 0 0 0 1px rgba(255,255,255,0.08);
+  }
+  .seq-chip.on.q3 {
+    border-color: #3dcca0;
+    color: #d4fff0;
+    background: rgba(45,159,111,0.4);
+    box-shadow: 0 0 16px rgba(45,159,111,0.5), inset 0 0 0 1px rgba(255,255,255,0.08);
+  }
+  .seq-chip.on.q4 {
+    border-color: #6b9fff;
+    color: #e0ecff;
+    background: rgba(59,111,217,0.4);
+    box-shadow: 0 0 16px rgba(59,111,217,0.5), inset 0 0 0 1px rgba(255,255,255,0.08);
+  }
+  .seq-chip.on { transform: translateY(-1px); }
+  .compat-item.lit-q1 { border-left: 3px solid #5a6a7a; padding-left: 10px; }
+  .compat-item.lit-q2 { border-left: 3px solid #e04545; padding-left: 10px; }
+  .compat-item.lit-q3 { border-left: 3px solid #2d9f6f; padding-left: 10px; }
+  .compat-item.lit-q4 { border-left: 3px solid #3b6fd9; padding-left: 10px; }
+  .tag-q1 { background: rgba(90,106,122,0.35); color: #c5d0da; }
+  .tag-q2 { background: rgba(224,69,69,0.35); color: #ffb4b4; }
+  .tag-q3 { background: rgba(45,159,111,0.35); color: #9aefc8; }
+  .tag-q4 { background: rgba(59,111,217,0.35); color: #b4ccff; }
+
+  .compat-list { margin-top: 8px; }
+  .compat-item {
+    display: flex; justify-content: space-between; align-items: center;
+    padding: 8px 0; border-bottom: 1px solid var(--border); font-size: 0.85rem;
+  }
+  .compat-item:last-child { border-bottom: none; }
   .hidden { display: none !important; }
   footer { text-align: center; margin-top: 28px; font-size: 0.65rem; letter-spacing: 0.1em; text-transform: uppercase; color: var(--muted); }
   footer .gold { color: var(--gold); }
@@ -261,21 +326,11 @@
     <div class="clock-date" id="clockDate">Loading NY time…</div>
     <div class="clock-session" id="clockSession">—</div>
     <div class="cycle-bars" id="clockBars"></div>
-    <div class="radial-wrap" id="radialWrap">
-      <div class="radial-card">
-        <div class="radial-title">Macro · Quad / Year / Qtly</div>
-        <svg id="radialMacro" viewBox="0 0 200 200"></svg>
-      </div>
-      <div class="radial-card">
-        <div class="radial-title">Meso · Month / Week / Day</div>
-        <svg id="radialMeso" viewBox="0 0 200 200"></svg>
-      </div>
-      <div class="radial-card">
-        <div class="radial-title">Micro · 90m / 22.5m / 5.6m</div>
-        <svg id="radialMicro" viewBox="0 0 200 200"></svg>
-      </div>
+
+    <div class="clock-seq">
+      <span>Live sequence · Compatible highlights</span>
+      <div class="compat-line" id="clockSeqChips"></div>
     </div>
-    <div class="clock-seq"><span>Live sequence</span><div id="clockSeq">—</div></div>
   </div>
 
   <div class="controls">
@@ -306,20 +361,11 @@
       <div class="timeline" id="timeline"></div>
       <div class="micro-strip" id="microStrip"></div>
     </div>
-    <div class="stack-section">
-      <div class="stack-title">Full Cycle Stack</div>
-      <table>
-        <thead><tr><th>Cycle</th><th>Quarter</th><th>Window</th></tr></thead>
-        <tbody id="tableBody"></tbody>
-      </table>
-      <div class="compact"><div class="clabel">Compact Code</div><div class="ccode" id="compactCode"></div></div>
+    <div class="stack-section" id="compatSection">
+      <div class="stack-title">Mapped Sequence · Compatible Highlights</div>
+      <div id="compatView"></div>
     </div>
-    <div class="ssmt-section">
-      <div class="stack-title">SSMT Validity · HTF → LTF</div>
-      <div id="ssmtZones"></div>
-      <div style="margin-top:14px" id="htfContext"></div>
-      <div style="margin-top:10px" id="ltfAllowed"></div>
-    </div>
+</div>
   </div>
 
   <footer>QS Arcana · Quarterly Theory<br><span class="gold">Map the quarter.</span></footer>
@@ -522,6 +568,41 @@ function fullStack(dt) {
   };
 }
 
+
+function buildCompatChips(s) {
+  const levels = [
+    { name: "Quad", q: s.quad },
+    { name: "Year", q: s.yearly },
+    { name: "Qtly", q: s.quarterly },
+    { name: "Month", q: s.monthly.q },
+    { name: "Week", q: s.weekly },
+    { name: "Day", q: s.daily },
+    { name: "90m", q: s.active90 },
+    { name: "22.5", q: s.fractals[1] ? s.fractals[1].q : 0 },
+    { name: "5.6", q: s.fractals[2] ? s.fractals[2].q : 0 },
+    { name: "1.4", q: s.fractals[3] ? s.fractals[3].q : 0 },
+    { name: "21s", q: s.fractals[4] ? s.fractals[4].q : 0 },
+    { name: "5.3s", q: s.fractals[5] ? s.fractals[5].q : 0 },
+  ];
+  const VALID = new Set([
+    "1-1-1", "1-1-4", "1-4-4", "1-4-1",
+    "2-2-2", "3-3-3",
+    "4-4-4", "4-4-1", "4-1-1", "4-1-4",
+  ]);
+  const light = levels.map(() => 0);
+  for (let i = 0; i <= levels.length - 3; i++) {
+    const a = levels[i].q, b = levels[i+1].q, c = levels[i+2].q;
+    if (!a || !b || !c) continue;
+    if (VALID.has(`${a}-${b}-${c}`)) {
+      light[i] = a; light[i+1] = b; light[i+2] = c;
+    }
+  }
+  return levels.map((L, i) => {
+    const cls = light[i] ? ` on q${L.q}` : "";
+    return `<div class="seq-chip${cls}"><span class="lbl">${L.name}</span>${L.q && L.q >= 1 ? "Q"+L.q : "—"}</div>`;
+  }).join("");
+}
+
 function tickClock() {
   try {
     const ny = getNYParts();
@@ -532,9 +613,9 @@ function tickClock() {
       `${ny.weekday}, ${MONTHS[ny.month-1]} ${ny.day}, ${ny.year} · ${sessionRange(s.daily)} NY`;
     document.getElementById("clockSession").textContent =
       `${sess} · Weekly ${WEEK_DAY[s.weekly]||"Outside"} · ${sessionRange(s.daily)} NY`;
-    document.getElementById("clockSeq").textContent = s.code;
+    const chipBox = document.getElementById("clockSeqChips");
+    if (chipBox) chipBox.innerHTML = buildCompatChips(s);
     drawBarClock(s);
-    drawRadialClock(s, ny);
   } catch (e) {
     document.getElementById("clockDate").textContent = "Clock error: " + e.message;
   }
@@ -554,6 +635,9 @@ function drawBarClock(s) {
       <div class="cycle-bar-track ${size}">${segs}</div>
     </div>`;
   }
+  const a1406 = s.fractals[3] ? s.fractals[3].q : 0;
+  const a211 = s.fractals[4] ? s.fractals[4].q : 0;
+  const a527 = s.fractals[5] ? s.fractals[5].q : 0;
   document.getElementById("clockBars").innerHTML = [
     barRow("Quadrennial", s.quad, "size-xl"),
     barRow("Yearly", s.yearly, "size-lg"),
@@ -564,149 +648,14 @@ function drawBarClock(s) {
     barRow("90-minute", s.active90, "size-sm"),
     barRow("22.5m", a225, "size-xs"),
     barRow("5.625m", a5625, "size-micro"),
+    barRow("1.406m", a1406, "size-micro"),
+    barRow("21.1s", a211, "size-micro"),
+    barRow("5.27s", a527, "size-micro"),
   ].join("");
 }
 
 // Concentric rings: outer = higher TF. Colours match Q1 gray, Q2 red, Q3 green, Q4 blue.
 // Quadrants (screen): Q2 top-left | Q3 top-right / Q1 bottom-left | Q4 bottom-right
-function drawRadialClock(s, ny) {
-  const colors = { 1: "#5a6a7a", 2: "#e04545", 3: "#2d9f6f", 4: "#3b6fd9" };
-  const a225 = s.fractals[1] ? s.fractals[1].q : 0;
-  const a5625 = s.fractals[2] ? s.fractals[2].q : 0;
-
-  // Continuous seconds for smooth live rotation
-  const totalSec =
-    ny.hour * 3600 + ny.minute * 60 + ny.second +
-    (Date.now() % 1000) / 1000;
-
-  // Progress 0–1 through each cycle length, continuous
-  const secInDay = totalSec % 86400;
-  // Daily Q = 6h = 21600s
-  const secInDailyQ = (() => {
-    const h = secInDay / 3600;
-    if (h >= 18) return secInDay - 18 * 3600;
-    if (h < 6) return secInDay;
-    if (h < 12) return secInDay - 6 * 3600;
-    return secInDay - 12 * 3600;
-  })();
-  const fracDailyQ = secInDailyQ / 21600;
-  const frac90 = (secInDailyQ % 5400) / 5400;       // 90m = 5400s
-  const frac225 = (secInDailyQ % 1350) / 1350;      // 22.5m
-  const frac5625 = (secInDailyQ % 337.5) / 337.5;   // 5.625m
-
-  // Weekly Q ≈ 24h
-  const fracWeekQ = secInDay / 86400;
-  // Month Q ≈ 7 days — use day-of-month + time
-  const fracMonthQ = (((ny.day - 1) % 7) + secInDay / 86400) / 7;
-  // Quarterly ≈ 1 month
-  const fracQtly = Math.min(1, (ny.day - 1 + secInDay / 86400) / 30);
-  // Year Q = 3 months
-  const monthInYQ = (ny.month - 1) % 3;
-  const fracYearQ = (monthInYQ + (ny.day - 1 + secInDay / 86400) / 30) / 3;
-  // Quad = 1 year within 4
-  const fracQuad = ((((ny.year - 2023) % 4) + 4) % 4 + (ny.month - 1 + (ny.day - 1) / 30) / 12) / 4;
-
-  // Absolute angle of "now" on dial (0° top, clockwise).
-  // Quarters: Q2=[225,315], Q3=[315,405), Q4=[45,135], Q1=[135,225]
-  function nowAngle(q, frac) {
-    if (!q || q < 1) return 0;
-    const start = { 2: 225, 3: 315, 4: 45, 1: 135 }[q];
-    return (start + (frac || 0) * 90) % 360;
-  }
-
-  const groups = [
-    {
-      id: "radialMacro",
-      rings: [
-        { name: "Quad", q: s.quad, r0: 62, r1: 88, frac: fracQuad },
-        { name: "Year", q: s.yearly, r0: 40, r1: 58, frac: fracYearQ },
-        { name: "Qtly", q: s.quarterly, r0: 20, r1: 36, frac: fracQtly },
-      ]
-    },
-    {
-      id: "radialMeso",
-      rings: [
-        { name: "Month", q: s.monthly.q, r0: 62, r1: 88, frac: fracMonthQ },
-        { name: "Week", q: s.weekly, r0: 40, r1: 58, frac: fracWeekQ },
-        { name: "Day", q: s.daily, r0: 20, r1: 36, frac: fracDailyQ },
-      ]
-    },
-    {
-      id: "radialMicro",
-      rings: [
-        { name: "90m", q: s.active90, r0: 62, r1: 88, frac: frac90 },
-        { name: "22.5", q: a225, r0: 40, r1: 58, frac: frac225 },
-        { name: "5.6", q: a5625, r0: 20, r1: 36, frac: frac5625 },
-      ]
-    },
-  ];
-
-  const cx = 100, cy = 100;
-  function polar(r, deg) {
-    const a = (deg - 90) * Math.PI / 180;
-    return [cx + r * Math.cos(a), cy + r * Math.sin(a)];
-  }
-  function quarterAngles(q) {
-    if (q === 2) return [225, 315];
-    if (q === 3) return [315, 405];
-    if (q === 4) return [45, 135];
-    return [135, 225];
-  }
-  function arcPath(r0, r1, q) {
-    let [a0, a1] = quarterAngles(q);
-    const large = (a1 - a0) > 180 ? 1 : 0;
-    const [x0, y0] = polar(r1, a0);
-    const [x1, y1] = polar(r1, a1);
-    const [x2, y2] = polar(r0, a1);
-    const [x3, y3] = polar(r0, a0);
-    return `M ${x0.toFixed(2)} ${y0.toFixed(2)} A ${r1} ${r1} 0 ${large} 1 ${x1.toFixed(2)} ${y1.toFixed(2)} L ${x2.toFixed(2)} ${y2.toFixed(2)} A ${r0} ${r0} 0 ${large} 0 ${x3.toFixed(2)} ${y3.toFixed(2)} Z`;
-  }
-
-  for (const g of groups) {
-    const svg = document.getElementById(g.id);
-    if (!svg) continue;
-    let parts = [];
-
-    // Fixed crosshairs
-    parts.push(`<line x1="100" y1="8" x2="100" y2="192" stroke="#ffffff18" stroke-width="1"/>`);
-    parts.push(`<line x1="8" y1="100" x2="192" y2="100" stroke="#ffffff18" stroke-width="1"/>`);
-
-    // Fixed Q labels on rim
-    for (const L of [
-      { q: 2, deg: 270, text: "Q2" },
-      { q: 3, deg: 0, text: "Q3" },
-      { q: 4, deg: 90, text: "Q4" },
-      { q: 1, deg: 180, text: "Q1" },
-    ]) {
-      const [x, y] = polar(96, L.deg);
-      parts.push(`<text x="${x}" y="${y}" text-anchor="middle" dominant-baseline="middle" fill="${colors[L.q]}" font-size="8" font-family="DM Sans,sans-serif" font-weight="700">${L.text}</text>`);
-    }
-
-    // Rotating rings — each turns so "now" sits under fixed top pointer
-    for (const ring of g.rings) {
-      const angle = nowAngle(ring.q, ring.frac);
-      const rot = (-angle).toFixed(3);
-      let inner = "";
-      for (let q = 1; q <= 4; q++) {
-        const op = ring.q === q ? 1 : 0.32;
-        inner += `<path d="${arcPath(ring.r0, ring.r1, q)}" fill="${colors[q]}" opacity="${op}"/>`;
-      }
-      // ring name travels with dial
-      const midR = (ring.r0 + ring.r1) / 2;
-      const [lx, ly] = polar(midR, 200);
-      inner += `<text x="${lx.toFixed(1)}" y="${ly.toFixed(1)}" text-anchor="middle" dominant-baseline="middle" fill="#f0ece4cc" font-size="5.5" font-family="DM Sans,sans-serif" font-weight="600">${ring.name}</text>`;
-      parts.push(`<g transform="rotate(${rot} 100 100)">${inner}</g>`);
-    }
-
-    // Center + fixed purple finger at top
-    parts.push(`<circle cx="100" cy="100" r="14" fill="#0a0a0a" stroke="#2a2a2a" stroke-width="1"/>`);
-    parts.push(`<line x1="100" y1="100" x2="100" y2="12" stroke="#c44dff" stroke-width="2.5" stroke-linecap="round"/>`);
-    parts.push(`<circle cx="100" cy="100" r="4" fill="#c44dff"/>`);
-
-    svg.innerHTML = parts.join("");
-  }
-}
-
 
 function renderYearSelect() {
   const el = document.getElementById("yearSelect");
@@ -773,79 +722,20 @@ function calculate() {
     { cycle: "Weekly", label: s.weekly?"Q"+s.weekly:"—", window: WEEK_DAY[s.weekly]||"Outside" },
     { cycle: "Daily", label: "Q"+s.daily, window: sess },
   ];
-  s.fractals.forEach(f => rows.push({ cycle: f.name, label: "Q"+f.q, window: f.window }));
-  document.getElementById("tableBody").innerHTML = rows.map(r =>
-    `<tr><td>${r.cycle}</td><td><span class="q-badge ${qClass(r.label)}">${r.label}</span></td><td class="mono">${r.window}</td></tr>`).join("");
-  document.getElementById("compactCode").textContent = s.code;
+  // rows kept only for logic; table UI removed
 
-  const zoneChain = [
-    { name: "Quadrennial", q: s.quad }, { name: "Yearly", q: s.yearly },
-    { name: "Quarterly", q: s.quarterly }, { name: "Monthly", q: s.monthly.q },
-    { name: "Weekly", q: s.weekly }, { name: "Daily", q: s.daily },
-    { name: "90-minute", q: s.active90 },
-  ];
-  document.getElementById("ssmtZones").innerHTML = zoneChain.map((z, i) => {
-    const above1 = i > 0 ? zoneChain[i-1].q : null;
-    const above2 = i > 1 ? zoneChain[i-2].q : null;
-    const j = judgeSSMT(above2, above1, z.q);
-    const vs = above2 && above1 ? `vs ${above2}·${above1} above` : (above1 ? `vs Q${above1} above` : "");
-    return `<div class="ssmt-row"><span>${z.name} <span class="q-badge ${qClass(z.q)}" style="margin-left:6px">Q${z.q||"—"}</span>
-      <span style="color:var(--muted);font-size:0.75rem;margin-left:6px">${vs}</span></span>
-      <span class="tag ${j.tag}">${j.text}</span></div><div class="hint">${j.hint}</div>`;
-  }).join("");
+  const compatEl = document.getElementById("compatView");
+  if (compatEl) compatEl.innerHTML = `<div class="compat-line">${buildCompatChips(s)}</div>`;
 
-  // Highest sequence in full stack
-  let best = null;
-  for (let i = 0; i < zoneChain.length; i++) {
-    const dig = zoneChain[i].q;
-    if (!dig || dig < 1) continue;
-    let j = i;
-    while (j+1 < zoneChain.length && zoneChain[j+1].q === dig) j++;
-    if (j - i + 1 >= 3) {
-      best = { digit: dig, len: j-i+1, label: Array(j-i+1).fill(dig).join("·"), levels: zoneChain.slice(i,j+1).map(c=>c.name).join(" – ") };
-      break;
-    }
-    i = j;
-  }
-  const stackStr = zoneChain.map(c => c.q || "x").join("·");
-  let htf = best
-    ? `<div class="ssmt-row"><span>Full stack</span><span class="tag tag-info">${stackStr}</span></div>
-       <div class="ssmt-row"><span>Highest sequence formed</span><span class="tag tag-yes">${best.label}</span></div>
-       <div class="ssmt-row"><span>Where</span><span class="tag tag-info">${best.levels}</span></div>`
-    : `<div class="ssmt-row"><span>Full stack</span><span class="tag tag-info">${stackStr}</span></div>
-       <div class="ssmt-row"><span>Highest sequence formed</span><span class="tag tag-no">None (no 3-consecutive)</span></div>`;
-
-  const neigh = analyseNeighbour(s.monthly.q, s.weekly||0, s.daily) || (best ? analyseNeighbour(best.digit, best.digit, best.digit) : null);
-  if (neigh) {
-    htf += `<div class="ssmt-row"><span>Current</span><span class="tag tag-info">${neigh.current}</span></div>
-      <div class="ssmt-row"><span>${neigh.kind==="partner"?"Neighbour (aligned)":"SSMT partner"}</span><span class="tag tag-yes">${neigh.neighbour}</span></div>
-      <div class="ssmt-row"><span>Valid setup quarter</span><span class="q-badge ${qClass(neigh.setupQ)}">Q${neigh.setupQ}</span></div>
-      <div class="hint">${neigh.message}</div>`;
-  }
-  document.getElementById("htfContext").innerHTML = htf;
-
-  const htfDigit = best ? best.digit : s.monthly.q;
-  const allowed = HTF_LTF_MAP[htfDigit] || [];
-  document.getElementById("ltfAllowed").innerHTML = allowed.length
-    ? `<div class="hint" style="margin-bottom:6px">Allowed LTF sequences (one cycle lower)</div>
-       <div class="ltf-list">${allowed.map(q=>`<span class="ltf-chip">${q}·${q}·${q}</span>`).join("")}</div>`
-    : `<span class="tag tag-no">No mapping</span>`;
 
   document.getElementById("output").classList.remove("hidden");
 }
 
+
 renderYearSelect(); renderMonthSelect(); renderDaySelect();
 tickClock();
 setInterval(tickClock, 1000);
-// Smooth dial motion between second ticks
-(function smoothDial() {
-  try {
-    const ny = getNYParts();
-    const s = fullStack(ny.asDate);
-    drawRadialClock(s, ny);
-  } catch (e) {}
-  requestAnimationFrame(smoothDial);
-})();
+
 </script>
 </body>
 </html>
