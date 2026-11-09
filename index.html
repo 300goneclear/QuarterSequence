@@ -89,62 +89,51 @@
     font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase;
     color: var(--muted); text-align: center; margin: 4px 0 10px;
   }
-  .radial-wrap {
-    display: grid;
-    grid-template-columns: repeat(3, 1fr);
+  .radial-section {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
     gap: 12px;
-    padding: 8px 0 4px;
-    align-items: start;
+    margin: 16px 0 20px;
   }
-  .radial-card {
+  .radial-group {
+    flex: 1 1 160px;
+    max-width: 220px;
     text-align: center;
   }
-  .radial-card .radial-title {
-    font-size: 0.6rem;
-    letter-spacing: 0.12em;
+  .radial-group-title {
+    font-size: 0.55rem;
+    letter-spacing: 0.1em;
     text-transform: uppercase;
     color: var(--muted);
     margin-bottom: 6px;
   }
-  .radial-card svg { width: 100%; max-width: 180px; height: auto; display: block; margin: 0 auto; }
+  .radial-group svg {
+    width: 100%;
+    max-width: 180px;
+    height: auto;
+    display: block;
+    margin: 0 auto;
+    overflow: visible;
+  }
+  .q-label {
+    font-size: 0.55rem;
+    font-weight: 600;
+    fill: var(--muted);
+  }
+  .ring-group {
+    /* SVG transform attribute handles rotation around explicit center */
+  }
+  .ring-seg { transition: opacity 0.12s, filter 0.12s; }
+  .ring-seg.active {
+    filter: brightness(1.35);
+    opacity: 1;
+  }
+  .ring-seg:not(.active) { opacity: 0.5; }
   @media (max-width: 560px) {
-    .cycle-bars { display: flex; flex-direction: column; gap: 8px; margin: 12px 0 16px; }
-  .cycle-bar-row { display: grid; grid-template-columns: 88px 1fr; gap: 10px; align-items: center; }
-  .cycle-bar-name {
-    font-size: 0.65rem; letter-spacing: 0.08em; text-transform: uppercase;
-    color: var(--muted); text-align: right;
-  }
-  .cycle-bar-track {
-    display: grid; grid-template-columns: repeat(4, 1fr); gap: 2px;
-    border-radius: 6px; overflow: hidden;
-  }
-  .cycle-bar-track .seg {
-    display: flex; align-items: center; justify-content: center;
-    font-weight: 700; color: rgba(255,255,255,0.9); height: 100%;
-  }
-  .cycle-bar-track .seg.q1 { background: var(--q1); }
-  .cycle-bar-track .seg.q2 { background: var(--q2); }
-  .cycle-bar-track .seg.q3 { background: var(--q3); }
-  .cycle-bar-track .seg.q4 { background: var(--q4); }
-  .cycle-bar-track .seg.active { box-shadow: inset 0 0 0 2px var(--gold); color: #fff; }
-  .cycle-bar-track.size-xl { height: 40px; border-radius: 8px; }
-  .cycle-bar-track.size-xl .seg { font-size: 0.8rem; }
-  .cycle-bar-track.size-lg { height: 34px; border-radius: 7px; }
-  .cycle-bar-track.size-lg .seg { font-size: 0.72rem; }
-  .cycle-bar-track.size-md { height: 28px; }
-  .cycle-bar-track.size-md .seg { font-size: 0.68rem; }
-  .cycle-bar-track.size-sm { height: 22px; }
-  .cycle-bar-track.size-sm .seg { font-size: 0.62rem; }
-  .cycle-bar-track.size-xs { height: 16px; }
-  .cycle-bar-track.size-xs .seg { font-size: 0.55rem; }
-  .cycle-bar-track.size-micro { height: 10px; }
-  .cycle-bar-track.size-micro .seg { font-size: 0; }
-  .clock-session {
-    font-size: 0.62rem; letter-spacing: 0.12em; text-transform: uppercase;
-    color: var(--muted); text-align: center; margin: 4px 0 10px;
-  }
-  .radial-wrap { grid-template-columns: 1fr; }
-    .radial-card svg { max-width: 220px; }
+    .radial-section { gap: 8px; }
+    .radial-group { flex: 1 1 140px; max-width: 180px; }
+    .radial-group svg { max-width: 140px; }
   }
   .live-clock .clock-seq {
     margin-top: 14px;
@@ -326,6 +315,25 @@
     <div class="clock-date" id="clockDate">Loading NY time…</div>
     <div class="clock-session" id="clockSession">—</div>
     <div class="cycle-bars" id="clockBars"></div>
+
+    <div class="radial-section" id="radialSection">
+      <div class="radial-group">
+        <div class="radial-group-title">QUAD / YEAR / QTLY</div>
+        <svg id="radialMacro" viewBox="0 0 200 200"></svg>
+      </div>
+      <div class="radial-group">
+        <div class="radial-group-title">MONTH / WEEK / DAY</div>
+        <svg id="radialMeso" viewBox="0 0 200 200"></svg>
+      </div>
+      <div class="radial-group">
+        <div class="radial-group-title">90M / MICRO / NANO</div>
+        <svg id="radialMicro" viewBox="0 0 200 200"></svg>
+      </div>
+      <div class="radial-group">
+        <div class="radial-group-title">1.4 / 21S / 5.3S</div>
+        <svg id="radialNano" viewBox="0 0 200 200"></svg>
+      </div>
+    </div>
 
     <div class="clock-seq">
       <span>Live sequence · Compatible highlights</span>
@@ -541,16 +549,19 @@ function getNYParts(date = new Date()) {
     timeZone: "America/New_York",
     year: "numeric", month: "2-digit", day: "2-digit",
     hour: "2-digit", minute: "2-digit", second: "2-digit",
+    fractionalSecondDigits: 3,
     hour12: false, weekday: "long"
   });
   const parts = {};
   for (const p of fmt.formatToParts(date)) if (p.type !== "literal") parts[p.type] = p.value;
   let hour = parseInt(parts.hour, 10);
   if (hour === 24) hour = 0;
+  const ms = parts.fractionalSecond ? parseInt(parts.fractionalSecond, 10) : 0;
   return {
     year: +parts.year, month: +parts.month, day: +parts.day,
-    hour, minute: +parts.minute, second: +parts.second, weekday: parts.weekday,
-    asDate: new Date(+parts.year, +parts.month - 1, +parts.day, hour, +parts.minute, +parts.second)
+    hour, minute: +parts.minute, second: +parts.second, ms,
+    weekday: parts.weekday,
+    asDate: new Date(+parts.year, +parts.month - 1, +parts.day, hour, +parts.minute, +parts.second, ms)
   };
 }
 
@@ -568,6 +579,39 @@ function fullStack(dt) {
   };
 }
 
+
+function getSequenceLight(s) {
+  const levels = [
+    { key: "quad", q: s.quad },
+    { key: "yearly", q: s.yearly },
+    { key: "quarterly", q: s.quarterly },
+    { key: "monthly", q: s.monthly.q },
+    { key: "weekly", q: s.weekly },
+    { key: "daily", q: s.daily },
+    { key: "90m", q: s.active90 },
+    { key: "22.5", q: s.fractals[1] ? s.fractals[1].q : 0 },
+    { key: "5.6", q: s.fractals[2] ? s.fractals[2].q : 0 },
+    { key: "1.4", q: s.fractals[3] ? s.fractals[3].q : 0 },
+    { key: "21s", q: s.fractals[4] ? s.fractals[4].q : 0 },
+    { key: "5.3s", q: s.fractals[5] ? s.fractals[5].q : 0 },
+  ];
+  const VALID = new Set([
+    "1-1-1", "1-1-4", "1-4-4", "1-4-1",
+    "2-2-2", "3-3-3",
+    "4-4-4", "4-4-1", "4-1-1", "4-1-4",
+  ]);
+  const light = {};
+  for (let i = 0; i <= levels.length - 3; i++) {
+    const a = levels[i].q, b = levels[i+1].q, c = levels[i+2].q;
+    if (!a || !b || !c) continue;
+    if (VALID.has(`${a}-${b}-${c}`)) {
+      light[levels[i].key] = a;
+      light[levels[i+1].key] = b;
+      light[levels[i+2].key] = c;
+    }
+  }
+  return light;
+}
 
 function buildCompatChips(s) {
   const levels = [
@@ -616,6 +660,7 @@ function tickClock() {
     const chipBox = document.getElementById("clockSeqChips");
     if (chipBox) chipBox.innerHTML = buildCompatChips(s);
     drawBarClock(s);
+    drawConcentricDials(ny.asDate, s);
   } catch (e) {
     document.getElementById("clockDate").textContent = "Clock error: " + e.message;
   }
@@ -654,8 +699,176 @@ function drawBarClock(s) {
   ].join("");
 }
 
-// Concentric rings: outer = higher TF. Colours match Q1 gray, Q2 red, Q3 green, Q4 blue.
-// Quadrants (screen): Q2 top-left | Q3 top-right / Q1 bottom-left | Q4 bottom-right
+// Concentric rings — full circles, smooth sliding rotation, fixed purple finger.
+const Q_COLORS = {1: "#5a6a7a", 2: "#b33a3a", 3: "#2d6a4f", 4: "#1a4a7a"};
+
+function polarToCart(cx, cy, r, deg) {
+  const rad = (deg - 90) * Math.PI / 180;
+  return { x: cx + r * Math.cos(rad), y: cy + r * Math.sin(rad) };
+}
+
+function ringArc(cx, cy, rOuter, rInner, startDeg, endDeg) {
+  const so = polarToCart(cx, cy, rOuter, startDeg);
+  const eo = polarToCart(cx, cy, rOuter, endDeg);
+  const ei = polarToCart(cx, cy, rInner, endDeg);
+  const si = polarToCart(cx, cy, rInner, startDeg);
+  const large = (endDeg - startDeg) > 180 ? 1 : 0;
+  return `M ${so.x.toFixed(2)} ${so.y.toFixed(2)} A ${rOuter} ${rOuter} 0 ${large} 1 ${eo.x.toFixed(2)} ${eo.y.toFixed(2)} L ${ei.x.toFixed(2)} ${ei.y.toFixed(2)} A ${rInner} ${rInner} 0 ${large} 0 ${si.x.toFixed(2)} ${si.y.toFixed(2)} Z`;
+}
+
+function getProgressForLevel(dt, level, s) {
+  const d = new Date(dt);
+  if (level === "quad") {
+    const y = d.getFullYear();
+    const yearInCycle = ((y - 2023) % 4 + 4) % 4;
+    const monthProg = (d.getMonth() + d.getDate()/31) / 12;
+    const progress = (yearInCycle + monthProg) / 4;
+    return { progress, q: Math.min(Math.floor(progress * 4) + 1, 4) };
+  }
+  if (level === "yearly") {
+    const m = d.getMonth() + 1;
+    const q = getYearly(m);
+    const startM = [1,4,7,10][q-1];
+    const progInQ = ((m - startM) + d.getDate()/31) / 3;
+    const progress = ((q-1) + Math.min(progInQ,1)) / 4;
+    return { progress, q };
+  }
+  if (level === "quarterly") {
+    const m = d.getMonth() + 1;
+    const q = getQuarterly(m);
+    const qStart = [1,4,7,10][q-1];
+    const prog = ((m - qStart) + d.getDate()/31) / 3;
+    const progress = ((q-1) + Math.min(Math.max(prog,0),1)) / 4;
+    return { progress, q };
+  }
+  if (level === "monthly") {
+    const monthly = getMonthly(d);
+    let weekStart = new Date(d);
+    weekStart.setDate(d.getDate() - d.getDay());
+    weekStart.setHours(18, 0, 0, 0);
+    if (d < weekStart) weekStart.setDate(weekStart.getDate() - 7);
+    const hoursInWeek = Math.max(0, (d - weekStart) / 3600000);
+    const weekProg = Math.min(hoursInWeek / 168, 1);
+    const progress = ((monthly.q - 1) + weekProg) / 4;
+    return { progress, q: monthly.q };
+  }
+  if (level === "weekly") {
+    let weekStart = new Date(d);
+    weekStart.setDate(d.getDate() - d.getDay());
+    weekStart.setHours(18, 0, 0, 0);
+    if (d < weekStart) weekStart.setDate(weekStart.getDate() - 7);
+    const hours = (d - weekStart) / 3600000;
+    if (hours < 0 || hours >= 96) return { progress: 0, q: 0 };
+    const progress = hours / 96;
+    return { progress, q: Math.min(Math.floor(hours / 24) + 1, 4) };
+  }
+  if (level === "daily") {
+    const h = d.getHours() + d.getMinutes()/60 + d.getSeconds()/3600 + d.getMilliseconds()/3600000;
+    const hoursFrom18 = (h - 18 + 24) % 24;
+    const progress = hoursFrom18 / 24;
+    return { progress, q: Math.min(Math.floor(hoursFrom18 / 6) + 1, 4) };
+  }
+  if (level === "90m") {
+    const daily = getDaily(d);
+    let blockStart = new Date(d);
+    if (daily === 1) {
+      if (d.getHours() >= 18) blockStart.setHours(18,0,0,0);
+      else { blockStart.setDate(blockStart.getDate()-1); blockStart.setHours(18,0,0,0); }
+    } else if (daily === 2) blockStart.setHours(0,0,0,0);
+    else if (daily === 3) blockStart.setHours(6,0,0,0);
+    else blockStart.setHours(12,0,0,0);
+    const mins = (d - blockStart) / 60000;
+    const progress = Math.min(Math.max(mins / 360, 0), 1);
+    return { progress, q: Math.min(Math.floor(mins / 90) + 1, 4) };
+  }
+  const fractalDur = { "22.5": 1.5, "5.6": 0.375, "1.4": 0.09375, "21s": 0.0234375, "5.3s": 0.005859375 };
+  if (fractalDur[level]) {
+    const daily = getDaily(d);
+    let blockStart = new Date(d);
+    if (daily === 1) {
+      if (d.getHours() >= 18) blockStart.setHours(18,0,0,0);
+      else { blockStart.setDate(blockStart.getDate()-1); blockStart.setHours(18,0,0,0); }
+    } else if (daily === 2) blockStart.setHours(0,0,0,0);
+    else if (daily === 3) blockStart.setHours(6,0,0,0);
+    else blockStart.setHours(12,0,0,0);
+    const cycleH = fractalDur[level];
+    const elapsed = (d.getTime() - blockStart.getTime()) / 3600000;
+    const progress = (elapsed % cycleH) / cycleH;
+    return { progress: Math.min(Math.max(progress, 0), 1), q: Math.min(Math.floor(progress * 4) + 1, 4) };
+  }
+  return { progress: 0, q: 0 };
+}
+
+function drawConcentricGroup(svgId, levels, dt, s, seqLight) {
+  const svg = document.getElementById(svgId);
+  if (!svg) return;
+  const cx = 100, cy = 100;
+  const rings = [
+    { rOuter: 82, rInner: 64 },
+    { rOuter: 60, rInner: 44 },
+    { rOuter: 40, rInner: 26 },
+  ];
+
+  if (!svg.dataset.built || svg.dataset.built !== "v2" || svg.querySelectorAll(".ring-group").length !== levels.length) {
+    let html = "";
+    levels.forEach((lvl, i) => {
+      const ring = rings[i];
+      html += `<g class="ring-group" data-level="${lvl.key}">`;
+      for (let q = 1; q <= 4; q++) {
+        const start = (q - 1) * 90;
+        const end = start + 90;
+        html += `<path class="ring-seg" data-q="${q}" d="${ringArc(cx, cy, ring.rOuter, ring.rInner, start, end)}" fill="${Q_COLORS[q]}" stroke="#0a0a0a" stroke-width="1.2"/>`;
+      }
+      html += `</g>`;
+      const labelR = (ring.rOuter + ring.rInner) / 2;
+      const lp = polarToCart(cx, cy, labelR, 50);
+      html += `<text x="${lp.x.toFixed(1)}" y="${lp.y.toFixed(1)}" text-anchor="middle" font-size="6.5" fill="#6b6560">${lvl.label}</text>`;
+    });
+    html += `<line x1="100" y1="100" x2="100" y2="18" stroke="#a855f7" stroke-width="2.4" stroke-linecap="round"/>`;
+    html += `<circle cx="100" cy="18" r="4" fill="#a855f7"/>`;
+    html += `<circle cx="100" cy="100" r="5.5" fill="#a855f7"/>`;
+    svg.innerHTML = html;
+    svg.dataset.built = "v2";
+  }
+
+  levels.forEach((lvl) => {
+    const prog = getProgressForLevel(dt, lvl.key, s);
+    const rot = -prog.progress * 360;
+    const activeQ = Math.min(Math.floor(prog.progress * 4) + 1, 4);
+    const group = svg.querySelector(`.ring-group[data-level="${lvl.key}"]`);
+    if (group) {
+      group.setAttribute("transform", `rotate(${rot.toFixed(3)} ${cx} ${cy})`);
+      group.querySelectorAll(".ring-seg").forEach(seg => {
+        const q = +seg.dataset.q;
+        seg.classList.toggle("active", q === activeQ);
+      });
+    }
+  });
+}
+
+function drawConcentricDials(dt, s) {
+  const seqLight = getSequenceLight(s);
+  drawConcentricGroup("radialMacro", [
+    { key: "quad", label: "Quad" },
+    { key: "yearly", label: "Year" },
+    { key: "quarterly", label: "Qtly" },
+  ], dt, s, seqLight);
+  drawConcentricGroup("radialMeso", [
+    { key: "monthly", label: "Month" },
+    { key: "weekly", label: "Week" },
+    { key: "daily", label: "Day" },
+  ], dt, s, seqLight);
+  drawConcentricGroup("radialMicro", [
+    { key: "90m", label: "90m" },
+    { key: "22.5", label: "micro" },
+    { key: "5.6", label: "nano" },
+  ], dt, s, seqLight);
+  drawConcentricGroup("radialNano", [
+    { key: "1.4", label: "1.4" },
+    { key: "21s", label: "21s" },
+    { key: "5.3s", label: "5.3s" },
+  ], dt, s, seqLight);
+}
 
 function renderYearSelect() {
   const el = document.getElementById("yearSelect");
@@ -733,8 +946,22 @@ function calculate() {
 
 
 renderYearSelect(); renderMonthSelect(); renderDaySelect();
+let lastFull = 0;
+function smoothTick(now) {
+  try {
+    const ny = getNYParts();
+    const s = fullStack(ny.asDate);
+    drawConcentricDials(ny.asDate, s);
+  } catch (e) {}
+  if (now - lastFull > 200) {
+    tickClock();
+    lastFull = now;
+  }
+  requestAnimationFrame(smoothTick);
+}
+
 tickClock();
-setInterval(tickClock, 1000);
+requestAnimationFrame(smoothTick);
 
 </script>
 </body>
