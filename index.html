@@ -66,13 +66,23 @@
   }
   .cycle-bar-track .seg {
     display: flex; align-items: center; justify-content: center;
-    font-weight: 700; color: rgba(255,255,255,0.9); height: 100%;
+    font-weight: 700; color: var(--muted); height: 100%;
+    background: transparent;
+    border: 1px solid var(--border2);
   }
-  .cycle-bar-track .seg.q1 { background: var(--q1); }
-  .cycle-bar-track .seg.q2 { background: var(--q2); }
-  .cycle-bar-track .seg.q3 { background: var(--q3); }
-  .cycle-bar-track .seg.q4 { background: var(--q4); }
-  .cycle-bar-track .seg.active { box-shadow: inset 0 0 0 2px var(--gold); color: #fff; }
+  .cycle-bar-track .seg.q1 { }
+  .cycle-bar-track .seg.q2 { }
+  .cycle-bar-track .seg.q3 { }
+  .cycle-bar-track .seg.q4 { }
+  .cycle-bar-track .seg.active {
+    box-shadow: inset 0 0 0 2px var(--gold);
+    color: #fff;
+    border-color: transparent;
+  }
+  .cycle-bar-track .seg.active.q1 { background: var(--q1); }
+  .cycle-bar-track .seg.active.q2 { background: var(--q2); }
+  .cycle-bar-track .seg.active.q3 { background: var(--q3); }
+  .cycle-bar-track .seg.active.q4 { background: var(--q4); }
   .cycle-bar-track.size-xl { height: 40px; border-radius: 8px; }
   .cycle-bar-track.size-xl .seg { font-size: 0.8rem; }
   .cycle-bar-track.size-lg { height: 34px; border-radius: 7px; }
@@ -672,9 +682,11 @@ function drawBarClock(s) {
   function barRow(name, activeQ, size) {
     if (!activeQ || activeQ < 1) activeQ = 0;
     const hide = size === "size-micro";
-    const segs = [1,2,3,4].map(q =>
-      `<div class="seg q${q}${q===activeQ?" active":""}">${hide?"":"Q"+q}</div>`
-    ).join("");
+    const segs = [1,2,3,4].map(q => {
+      const isActive = q === activeQ;
+      const label = hide ? "" : "Q"+q;
+      return `<div class="seg q${q}${isActive?" active":""}">${label}</div>`;
+    }).join("");
     return `<div class="cycle-bar-row">
       <div class="cycle-bar-name">${name}</div>
       <div class="cycle-bar-track ${size}">${segs}</div>
